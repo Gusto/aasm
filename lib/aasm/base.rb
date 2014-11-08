@@ -18,8 +18,13 @@ module AASM
 
       # use requires_new for nested transactions
       configure :requires_new_transaction, true
+      
+      # raise an error if the state's setter is called outside of a transition
+      configure :disallow_setter, false
 
       configure :enum, nil
+      
+      disallow_setter if @state_machine.config.disallow_setter
     end
 
     def initial_state(new_initial_state=nil)
@@ -93,6 +98,12 @@ module AASM
         @state_machine.config.send("#{key}=", @options[key])
       elsif @state_machine.config.send(key).nil?
         @state_machine.config.send("#{key}=", default_value)
+      end
+    end
+    
+    def disallow_setter
+      @klass.send(:define_method, "#{@state_machine.config.column.to_s}=") do |val|
+        raise AASM::SetterNotAllowed
       end
     end
 
